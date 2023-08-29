@@ -1,0 +1,77 @@
+name: Dependabot auto merge
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        default: "['ubuntu-latest']"
+        description: The OSs that the workflow is run on
+        required: false
+        type: string
+      auto-approve:
+        description: Automatically approve pull-requests
+        default: true
+        required: false
+        type: boolean
+      continue-on-error:
+        description: Continue on error
+        default: true
+        required: false
+        type: boolean
+      labels:
+        description: The labels to add to the pull-request
+        default: status/need-review
+        required: false
+        type: string
+    secrets:
+      GH_TOKEN:
+        description: 'Personal access token passed from the caller workflow'
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GH_TOKEN == '' && secrets.GITHUB_TOKEN || secrets.GH_TOKEN }}
+  GH_TOKEN: ${{ secrets.GH_TOKEN == '' && secrets.GITHUB_TOKEN || secrets.GH_TOKEN }}
+
+jobs:
+  auto-merge:
+    name: Dependabot
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: ${{ fromJson(inputs.runs-on) }}
+
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3.3.0
+        with:
+          fetch-depth: 1
+
+      - name: Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v1.3.6
+        with:
+          github-token: "${{ secrets.GH_TOKEN }}"
+          compat-lookup: true
+
+      - name: Approve PR
+        if: ${{ inputs.auto-approve }} == true
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+
+      - name: Use GH for merge PR
+        continue-on-error: ${{ inputs.continue-on-error }}
+        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch' || steps.dependabot-metadata.outputs.update-type == 'version-update:semver-minor'
+        run: |
+          gh pr merge ${{ github.event.number }} --squash -d
+
+      - name: Major change need review
+        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-major'
+        run: |
+          gh pr edit ${{ github.event.number }} --add-label "${{ inputs.labels }}"
