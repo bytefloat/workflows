@@ -159,7 +159,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Context for Buildx
         id: buildx-context
