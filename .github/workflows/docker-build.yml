@@ -18,6 +18,10 @@ on:
         description: 'Docker registry'
         required: false
         type: string
+      custom-image:
+        default: ''
+        required: false
+        type: string
       custom-tag:
         default: ''
         required: false
@@ -78,7 +82,7 @@ jobs:
         id: reponame
         uses: ASzc/change-string-case-action@v6
         with:
-          string: ${{ github.repository }}
+          string: ${{ inputs.custom-image != '' && inputs.custom-image || github.repository }}
 
       - name: Set output variables
         id: setvar
@@ -132,7 +136,7 @@ jobs:
         id: reponame
         uses: ASzc/change-string-case-action@v6
         with:
-          string: ${{ github.repository }}
+          string: ${{ inputs.custom-image != '' && inputs.custom-image || github.repository }}
 
       - name: Docker meta custom
         if: inputs.custom-tag != ''
