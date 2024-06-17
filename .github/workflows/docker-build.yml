@@ -184,7 +184,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           file: ${{ inputs.dockerfile }}
           build-args: ${{ inputs.build-args }}
